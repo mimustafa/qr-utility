@@ -75,24 +75,39 @@ def read_qr_code(image_path):
         # Initialize QR code detector
         qr_detector = cv2.QRCodeDetector()
         
-        # Detect and decode QR code
-        data, bbox, _ = qr_detector.detectAndDecode(img)
+        # Try multiple preprocessing approaches
+        images_to_try = [
+            ("Original", img),
+            ("Grayscale", cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)),
+        ]
         
-        if not data:
-            print(f"✗ No QR code found in: {image_path}")
-            return []
+        # Add preprocessed versions for photos
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        images_to_try.extend([
+            ("Enhanced contrast", cv2.equalizeHist(gray)),
+            ("Thresholded", cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)),
+            ("Binary", cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]),
+        ])
         
-        # Display the decoded data
-        results = [data]
+        # Try detecting with different preprocessing
+        for method_name, processed_img in images_to_try:
+            data, bbox, _ = qr_detector.detectAndDecode(processed_img)
+            
+            if data:
+                # Display the decoded data
+                results = [data]
+                
+                print(f"\n✓ QR Code detected! (using {method_name})")
+                print(f"  Content: {data}")
+                
+                # Check if it's a URL
+                if data.startswith(('http://', 'https://', 'www.')):
+                    print(f"  → This appears to be a URL")
+                
+                return results
         
-        print(f"\n✓ QR Code detected!")
-        print(f"  Content: {data}")
-        
-        # Check if it's a URL
-        if data.startswith(('http://', 'https://', 'www.')):
-            print(f"  → This appears to be a URL")
-        
-        return results
+        print(f"✗ No QR code found in: {image_path}")
+        return []
         
     except Exception as e:
         print(f"✗ Error reading image: {e}")
