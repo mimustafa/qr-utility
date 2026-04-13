@@ -1,6 +1,6 @@
 # QR Code Utility
 
-A Python utility to create and read QR codes.
+A Python command-line utility to create and read QR codes.
 
 ## Setup
 
